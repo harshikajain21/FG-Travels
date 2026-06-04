@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
-import { getEstimate, createBooking } from "@/services/estimate.functions";
+import { getEstimate } from "@/services/estimate.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,18 +10,7 @@ import { OWNER_WHATSAPP, SUGGESTED_DESTINATIONS } from "@/lib/config";
 import { getCarImage } from "@/lib/fleet-images";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-type Car = {
-  id: string;
-  name: string;
-  category: string;
-  seating_capacity: number;
-  has_ac: boolean;
-  luggage_capacity: string;
-  rate_per_km: number;
-  is_available: boolean;
-  image_path: string | null;
-};
+import { STATIC_CARS } from "@/lib/data";
 
 type Estimate = {
   ok: true;
@@ -39,9 +27,8 @@ type Estimate = {
 const fmt = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 
 export function BookingWidget() {
-  const [cars, setCars] = useState<Car[]>([]);
   const [destination, setDestination] = useState("");
-  const [vehicleId, setVehicleId] = useState<string>("");
+  const [vehicleId, setVehicleId] = useState<string>(STATIC_CARS[0]?.id || "");
   const [days, setDays] = useState(1);
   const [food, setFood] = useState<"provide_locally" | "pay_allowance">("provide_locally");
   const [estimate, setEstimate] = useState<Estimate | null>(null);
@@ -51,18 +38,8 @@ export function BookingWidget() {
   const [submitting, setSubmitting] = useState(false);
 
   const getEstimateFn = useServerFn(getEstimate);
-  const createBookingFn = useServerFn(createBooking);
 
-  useEffect(() => {
-    supabase.from("cars").select("*").eq("is_available", true).order("rate_per_km").then(({ data }) => {
-      if (data) {
-        setCars(data as Car[]);
-        if (!vehicleId && data.length) setVehicleId(data[0].id);
-      }
-    });
-  }, []);
-
-  const selectedCar = useMemo(() => cars.find(c => c.id === vehicleId), [cars, vehicleId]);
+  const selectedCar = useMemo(() => STATIC_CARS.find(c => c.id === vehicleId), [vehicleId]);
 
   // Auto-recompute estimate when inputs change & destination valid-looking
   useEffect(() => {
@@ -76,18 +53,13 @@ export function BookingWidget() {
       finally { setLoading(false); }
     }, 350);
     return () => clearTimeout(t);
-  }, [destination, vehicleId, days, food]);
+  }, [destination, vehicleId, days, food, getEstimateFn]);
 
   const sendWhatsApp = async () => {
     if (!estimate) { toast.error("Get a valid estimate first"); return; }
     if (!name.trim() || !phone.trim()) { toast.error("Enter your name & phone"); return; }
     setSubmitting(true);
     try {
-      const res = await createBookingFn({
-        data: { customerName: name, customerPhone: phone, destination, vehicleId, durationDays: days, driverFood: food }
-      });
-      if (!res.ok) { toast.error(res.error); return; }
-
       const msg = [
         `*New Booking Request — FG Travels*`,
         ``,
@@ -103,9 +75,9 @@ export function BookingWidget() {
         `*Base fare:* ${fmt(estimate.baseFare)}`,
         `*Driver food:* ${fmt(estimate.foodAllowance)}`,
         `*Estimated total:* ${fmt(estimate.total)}`,
+        `*Booking status:* Pending Confirmation`,
         ``,
         `_Tolls & diesel fluctuations payable at actuals._`,
-        `Booking ref: ${res.bookingId.slice(0, 8)}`,
       ].join("\n");
 
       const url = `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(msg)}`;
@@ -149,7 +121,7 @@ export function BookingWidget() {
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-2 block">Choose your vehicle</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {cars.map(c => (
+              {STATIC_CARS.map(c => (
                 <button
                   key={c.id}
                   type="button"

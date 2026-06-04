@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { STATIC_CARS } from "@/lib/data";
 
 // Sagar, MP coordinates
 const SAGAR = { lat: 23.8388, lon: 78.7378 };
@@ -39,7 +39,7 @@ const KNOWN: Record<string, { km: number; label: string }> = {
 
 const InputSchema = z.object({
   destination: z.string().trim().min(2).max(120),
-  vehicleId: z.string().uuid(),
+  vehicleId: z.string(),
   durationDays: z.number().int().min(1).max(30),
   driverFood: z.enum(["provide_locally", "pay_allowance"]),
 });
@@ -75,7 +75,6 @@ async function resolveDistance(destination: string): Promise<DistanceResult> {
       }
       const element = json.rows?.[0]?.elements?.[0];
       if (!element || element.status !== "OK") {
-        // Standardized message per spec
         return { ok: false, error: "Destination city not found. Please verify spelling." };
       }
       const meters = element.distance?.value;
@@ -86,7 +85,6 @@ async function resolveDistance(destination: string): Promise<DistanceResult> {
       return { ok: true, oneWayKm: Math.round(meters / 1000), label, source: "google" };
     } catch (err) {
       console.error("[google-maps] falling back to curated list:", err);
-      // fall through to KNOWN lookup
     }
   }
 
@@ -113,14 +111,10 @@ export const getEstimate = createServerFn({ method: "POST" })
     const oneWayKm = dist.oneWayKm;
     const roundTripKm = oneWayKm * 2;
 
-    // 2. Fetch vehicle rate
-    const { data: car, error } = await supabaseAdmin
-      .from("cars")
-      .select("id, name, rate_per_km, is_available")
-      .eq("id", data.vehicleId)
-      .maybeSingle();
+    // 2. Fetch vehicle rate from static data
+    const car = STATIC_CARS.find((c) => c.id === data.vehicleId);
 
-    if (error || !car) {
+    if (!car) {
       return { ok: false as const, error: "Selected vehicle not found." };
     }
     if (!car.is_available) {
@@ -144,50 +138,4 @@ export const getEstimate = createServerFn({ method: "POST" })
       vehicleName: car.name,
       distanceSource: dist.source,
     };
-  });
-
-const CreateBookingSchema = z.object({
-  customerName: z.string().trim().min(2).max(100),
-  customerPhone: z.string().trim().min(7).max(20),
-  destination: z.string().trim().min(2).max(120),
-  vehicleId: z.string().uuid(),
-  durationDays: z.number().int().min(1).max(30),
-  driverFood: z.enum(["provide_locally", "pay_allowance"]),
-});
-
-export const createBooking = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => CreateBookingSchema.parse(d))
-  .handler(async ({ data }) => {
-    const dist = await resolveDistance(data.destination);
-    if (!dist.ok) return { ok: false as const, error: dist.error };
-
-    const { data: car } = await supabaseAdmin
-      .from("cars")
-      .select("id, name, rate_per_km")
-      .eq("id", data.vehicleId)
-      .maybeSingle();
-    if (!car) return { ok: false as const, error: "Vehicle not found." };
-
-    const roundTripKm = dist.oneWayKm * 2;
-    const baseFare = roundTripKm * Number(car.rate_per_km);
-    const foodAllowance = data.driverFood === "pay_allowance" ? 250 * data.durationDays : 0;
-    const total = baseFare + foodAllowance;
-
-    const { data: booking, error } = await supabaseAdmin.from("bookings").insert({
-      customer_name: data.customerName,
-      customer_phone: data.customerPhone,
-      from_location: "Sagar, MP",
-      to_location: dist.label,
-      round_trip_km: roundTripKm,
-      duration_days: data.durationDays,
-      vehicle_id: car.id,
-      vehicle_name: car.name,
-      driver_food_handling: data.driverFood,
-      base_fare: baseFare,
-      driver_food_allowance: foodAllowance,
-      total_estimated: total,
-    }).select("id").single();
-
-    if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const, bookingId: booking.id, total };
   });

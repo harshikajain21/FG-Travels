@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { getCarImage } from "@/lib/fleet-images";
 import { Users, Snowflake, MessageCircle, Gauge, CheckCircle2 } from "lucide-react";
 import { OWNER_WHATSAPP } from "@/lib/config";
+import { STATIC_CARS } from "@/lib/data";
 
 export const Route = createFileRoute("/fleet")({
   head: () => ({
@@ -18,29 +17,13 @@ export const Route = createFileRoute("/fleet")({
   component: Fleet,
 });
 
-type Car = {
-  id: string; name: string; category: string; seating_capacity: number;
-  has_ac: boolean; rate_per_km: number;
-  min_daily_fare: number | null; min_daily_km: number | null;
-  is_available: boolean; status: string; image_path: string | null;
-};
-
-const ORDER = ["Innova Crysta", "Innova", "Tavera", "Dzire", "Aspire"];
-
 function bookHref(carName: string) {
   const msg = `Hi FG Travels, I'd like to book the ${carName}. Please share availability and a quote.`;
   return `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(msg)}`;
 }
 
 function Fleet() {
-  const [cars, setCars] = useState<Car[]>([]);
-  useEffect(() => {
-    supabase.from("cars").select("*").then(({ data }: any) => {
-      const list = (data as Car[]) ?? [];
-      list.sort((a, b) => ORDER.indexOf(a.name) - ORDER.indexOf(b.name));
-      setCars(list);
-    });
-  }, []);
+  const cars = STATIC_CARS;
 
   return (
     <div className="min-h-screen flex flex-col">
