@@ -68,21 +68,38 @@ async function resolveDistance(destination: string): Promise<DistanceResult> {
 
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: any = await res.json();
+      const json = (await res.json()) as {
+        status: string;
+        rows?: {
+          elements?: { status: string; distance?: { value: number } }[];
+        }[];
+        destination_addresses?: string[];
+      };
 
       if (json.status !== "OK") {
         throw new Error(`Google API status: ${json.status}`);
       }
       const element = json.rows?.[0]?.elements?.[0];
       if (!element || element.status !== "OK") {
-        return { ok: false, error: "Destination city not found. Please verify spelling." };
+        return {
+          ok: false,
+          error: "Destination city not found. Please verify spelling.",
+        };
       }
       const meters = element.distance?.value;
       const label = json.destination_addresses?.[0] || destination;
       if (typeof meters !== "number") {
-        return { ok: false, error: "Destination city not found. Please verify spelling." };
+        return {
+          ok: false,
+          error: "Destination city not found. Please verify spelling.",
+        };
       }
-      return { ok: true, oneWayKm: Math.round(meters / 1000), label, source: "google" };
+      return {
+        ok: true,
+        oneWayKm: Math.round(meters / 1000),
+        label,
+        source: "google",
+      };
     } catch (err) {
       console.error("[google-maps] falling back to curated list:", err);
     }
@@ -93,10 +110,16 @@ async function resolveDistance(destination: string): Promise<DistanceResult> {
   if (!match) {
     return {
       ok: false,
-      error: "Destination city not found. Please verify spelling or try a nearby major city.",
+      error:
+        "Destination city not found. Please verify spelling or try a nearby major city.",
     };
   }
-  return { ok: true, oneWayKm: match.km, label: match.label, source: "fallback" };
+  return {
+    ok: true,
+    oneWayKm: match.km,
+    label: match.label,
+    source: "fallback",
+  };
 }
 
 export const getEstimate = createServerFn({ method: "POST" })
@@ -118,12 +141,18 @@ export const getEstimate = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Selected vehicle not found." };
     }
     if (!car.is_available) {
-      return { ok: false as const, error: "Selected vehicle is currently unavailable." };
+      return {
+        ok: false as const,
+        error: "Selected vehicle is currently unavailable.",
+      };
     }
 
     const rate = Number(car.rate_per_km);
     const baseFare = roundTripKm * rate;
-    const foodAllowance = data.driverFood === "pay_allowance" ? FOOD_ALLOWANCE * data.durationDays : 0;
+    const foodAllowance =
+      data.driverFood === "pay_allowance"
+        ? FOOD_ALLOWANCE * data.durationDays
+        : 0;
     const total = baseFare + foodAllowance;
 
     return {

@@ -24,19 +24,51 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="size-9 rounded-lg flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
+          <div
+            className="size-9 rounded-lg flex items-center justify-center"
+            style={{ background: "var(--gradient-accent)" }}
+          >
             <Car className="size-5 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div className="leading-tight">
-            <div className="font-bold text-foreground tracking-tight">FG Travels</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Sagar · MP</div>
+            <div className="font-bold text-foreground tracking-tight">
+              FG Travels
+            </div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Sagar · MP
+            </div>
           </div>
         </Link>
         <nav className="flex items-center gap-1 text-sm font-medium">
-          <Link to="/" className="px-3 py-2 rounded-md text-muted-foreground hover:text-foreground transition-colors" activeOptions={{ exact: true }} activeProps={{ className: "px-3 py-2 rounded-md text-foreground bg-secondary" }}>Home</Link>
-          <Link to="/fleet" className="px-3 py-2 rounded-md text-muted-foreground hover:text-foreground transition-colors" activeProps={{ className: "px-3 py-2 rounded-md text-foreground bg-secondary" }}>Fleet</Link>
-          <Link to="/about" className="px-3 py-2 rounded-md text-muted-foreground hover:text-foreground transition-colors" activeProps={{ className: "px-3 py-2 rounded-md text-foreground bg-secondary" }}>About</Link>
-          
+          <Link
+            to="/"
+            className="px-3 py-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            activeOptions={{ exact: true }}
+            activeProps={{
+              className: "px-3 py-2 rounded-md text-foreground bg-secondary",
+            }}
+          >
+            Home
+          </Link>
+          <Link
+            to="/fleet"
+            className="px-3 py-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            activeProps={{
+              className: "px-3 py-2 rounded-md text-foreground bg-secondary",
+            }}
+          >
+            Fleet
+          </Link>
+          <Link
+            to="/about"
+            className="px-3 py-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            activeProps={{
+              className: "px-3 py-2 rounded-md text-foreground bg-secondary",
+            }}
+          >
+            About
+          </Link>
+
           <a
             href={WA_URL}
             target="_blank"
@@ -58,7 +90,10 @@ export function SiteFooter() {
       <div className="container mx-auto px-4 py-10 grid gap-8 md:grid-cols-3 text-sm">
         <div>
           <div className="font-bold text-foreground mb-2">FG Travels</div>
-          <p className="text-muted-foreground">Premium outstation & local car rentals operating out of Sagar, Madhya Pradesh. Transparent pricing, professional drivers.</p>
+          <p className="text-muted-foreground">
+            Premium outstation & local car rentals operating out of Sagar,
+            Madhya Pradesh. Transparent pricing, professional drivers.
+          </p>
         </div>
         <div>
           <div className="font-semibold mb-2">Pricing model</div>
@@ -70,14 +105,17 @@ export function SiteFooter() {
         </div>
         <div>
           <div className="font-semibold mb-2">Contact</div>
-          <p className="text-muted-foreground mb-2">WhatsApp bookings open 24×7. Confirmations within minutes.</p>
+          <p className="text-muted-foreground mb-2">
+            WhatsApp bookings open 24×7. Confirmations within minutes.
+          </p>
           <a
             href={WA_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 font-semibold text-[#25D366] hover:underline"
           >
-            <MessageCircle className="size-4" fill="currentColor" /> +91 70004 82690
+            <MessageCircle className="size-4" fill="currentColor" /> +91 70004
+            82690
           </a>
         </div>
       </div>
